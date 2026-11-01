@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #define MAXLINE 1024
 #define MAXHIST 10
@@ -11,6 +12,9 @@ char hist[MAXHIST][MAXLINE];
 /* Just print our prompt */
 void show_prompt()
 {
+	char pwd[MAXLINE];
+	getcwd(pwd, MAXLINE);
+	printf("%s:~", pwd);
     printf("spish$ ");
 }
 
@@ -32,6 +36,36 @@ void print_history(){
 	
 }
 
+void do_cd(){
+	if (strcmp(line, "cd") == 0){
+		chdir("/");
+	}
+	const char *target = "cd ";
+	char *match = strstr(line, target);
+
+	char dir_target[MAXLINE];
+	if (match != NULL) {
+		char *after = match + strlen("cd ");
+		
+		int i = 0;
+
+		while (*after != '\n' && *after != '\0' && i < MAXLINE - 1) {
+			dir_target[i] = *after;
+			i++;
+			after++;
+		}
+		
+		dir_target[i] = '\0'; 
+	}
+
+	chdir(dir_target);
+}
+
+void do_pwd(){
+	char pwd[MAXLINE];
+	printf("%s\n", getcwd(pwd, MAXLINE));
+}
+
 int check_for_history()
 {
     return (strcmp(line, "history") == 0);
@@ -42,6 +76,14 @@ int check_for_exit()
     return (strcmp(line, "exit") == 0);
 }
 
+int check_for_cd(){
+	return (strncmp(line, "cd ", 3) == 0 || strcmp(line, "cd") == 0);
+}
+
+int check_for_pwd(){
+	return (strcmp(line,"pwd") == 0);
+}
+
 int do_command(){
 	if (check_for_exit() == 1){
 		return 1;
@@ -49,6 +91,14 @@ int do_command(){
 
 	if (check_for_history() == 1){
 		print_history();
+		return 0;
+	}
+	if (check_for_cd() == 1){
+		do_cd();
+		return 0;
+	}
+	if (check_for_pwd() == 1){
+		do_pwd();
 		return 0;
 	}
 }
@@ -88,4 +138,5 @@ int main()
 	}
 	printf("bye!\n");
 	return 0;
+
 }
