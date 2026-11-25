@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
+#include <unistd.h> //doesnt work in windows, needs linux environment
 
 #define MAXLINE 1024
 #define MAXHIST 10
@@ -9,13 +9,18 @@ char line[MAXLINE+1];
 int histcount = 0;
 char hist[MAXHIST][MAXLINE];
 
+#define MAXPROMPT 30
+char prompt[MAXPROMPT - 1] = "spish$";
+
+int echo_setting = 0;
+
 /* Just print our prompt */
 void show_prompt()
 {
 	char pwd[MAXLINE];
 	getcwd(pwd, MAXLINE);
 	printf("%s:~", pwd);
-    printf("spish$ ");
+    printf("%s ", prompt);
 }
 
 
@@ -91,14 +96,17 @@ int do_command(){
 
 	if (check_for_history() == 1){
 		print_history();
+		printf("%s \n", line);
 		return 0;
 	}
 	if (check_for_cd() == 1){
 		do_cd();
+		printf("%s \n", line);
 		return 0;
 	}
 	if (check_for_pwd() == 1){
 		do_pwd();
+		printf("%s \n", line);
 		return 0;
 	}
 }
@@ -123,10 +131,42 @@ void read_line()
     }
 }
 
+void get_options(){
+
+	FILE *fp;
+	char key[MAXLINE], value[MAXLINE];
+
+	fp = fopen(".spishrc", "r");
+	if (fp == NULL){
+		perror("error");
+		return;
+	} 
+
+	while((fgets(line, MAXLINE, fp)) != NULL){
+		if (sscanf(line, "%s%s", key, value) < 2)
+			continue; 
+		if(strncmp(line, "#", 1) == 0){
+			continue;
+		}
+		if(strcmp(key,"prompt") == 0){
+			strncpy(prompt, value,MAXPROMPT - 1);
+		}
+		if(strcmp(key,"echo")){
+			echo_setting = strcmp(value, "off");
+		}
+
+	}
+
+	fclose(fp);
+	return;
+}
+
 int main()
 {
 	printf("This is the Systems Programming @ Ioannina Shell (spish)\n");
 	printf("Enter 'exit' to finish\n\n");
+
+	get_options();
 
 	while (1) {
 		show_prompt();
